@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>System Landscape</title>
+    <title>System Landscape · Example</title>
     <style>
         :root {
             --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -733,240 +733,801 @@
 
 <!-- The model lives here. Edit this YAML to change the diagram. -->
 <script type="application/yaml" id="model-data">
-# The whole model. Edit it here (or via "Edit model" in the page) and reload.
-# Keys starting with "_" are ignored; _reference below documents every field.
-# Every value is read as text, so 1.20 and 0012345 keep their exact spelling.
-_reference:
-  _note: Documentation only - ignored by the page. Fields marked optional can be omitted.
-  meta:
-    title: text (optional)
-    subtitle: text (optional)
-  systems:
-    _note: external systems (IPAM, DNS, monitoring ...) the panel links into
-    id: unique id, referenced by external
-    name: text, the link label
-    url: >-
-      http(s) URL template. {field} is filled from the selected object, then its parents
-      (interface -> node -> item -> zone); {node.name} or {item.id} names the level, {ip|addr}
-      drops a /prefix. Values are URL-encoded; a link with an unfilled field is not shown.
-    home: http(s) URL of the system itself (optional, listed in the overview)
-    on: item, node, workload and/or interface - where the link appears by itself (optional)
-  external: >-
-    on an item, node, workload or interface (optional): a system id, or a list of system ids,
-    {system: id, field: value ...} to supply or override fields, or {label, url} for a one-off
-    link (its url may use the same {field} placeholders)
-  edge | shared: list of zones, drawn as full-width bands above the sites
-  outside: >-
-    list of zones, drawn as a full-width band below the sites - services you use but don't
-    run (SaaS, payment providers, public CAs ...). Zone type external suits them.
-  sites:
-    id: unique id
-    name: text
-    meta: text (optional)
-    zones: list of zones
-  zone:
-    id: unique id
-    name: text
-    type:
-      - edge
-      - network
-      - fw
-      - dmz
-      - mgmt
-      - backend
-      - storage
-      - shared
-      - external
-    tag: text (optional)
-    color: CSS color (optional, overrides type color)
-    items: list of items
-  item:
-    id: unique id, referenced by links
-    name: text
-    kind: >-
-      free text, e.g. service, cluster, vm, edge, gateway, lb, dns, router, switch, firewall,
-      storage, hsm
-    subtitle: text (optional)
-    color: CSS color (optional)
-    details: object of key/value text pairs (optional)
-    nodes: list of node names or node objects (optional)
-    cluster: >-
-      object of key/value facts (optional, e.g. distro, version, cni, podCidr). Its presence
-      makes the element a cluster: node chips are grouped and counted by role.
-    workloads: list of workloads (optional, e.g. the deployments running on a cluster)
-  node:
-    name: unique within the item, referenced by links
-    role: text (optional)
-    ip: text (optional)
-    mgmt: text (optional)
-    model: text (optional)
-    firmware: text (optional)
-    os: text (optional)
-    serial: text (optional)
-    rack: text (optional)
-    notes: text (optional)
-    interfaces: >-
-      list of interfaces (optional). Use it when a node sits in several networks; the single
-      ip field above stays valid for the simple case.
-    '*': any other key is shown as an extra property
-  interface:
-    name: unique within the node, e.g. eno1, referenced by links
-    network: zone id (shown as the zone name) or free text
-    ip: text (optional)
-    vlan: text (optional)
-    mac: text (optional)
-    mtu: text (optional)
-    notes: text (optional)
-    '*': any other key becomes an extra column
-  workload:
-    id: unique id (optional, referenced by links)
-    namespace: text (optional)
-    name: text
-    kind: text, e.g. Deployment, StatefulSet, DaemonSet, CronJob
-    replicas: text (optional)
-    image: text (optional)
-    ports: text (optional)
-    notes: text (optional)
-    '*': any other key is shown as an extra property
-  link:
-    from: item id
-    fromNode: node name within the from item (optional)
-    fromIface: interface name on the from node (optional, names the NIC the link uses)
-    fromWorkload: workload id or namespace/name within the from item (optional)
-    to: item id
-    toNode: node name within the to item (optional)
-    toIface: interface name on the to node (optional)
-    toWorkload: workload id or namespace/name within the to item (optional)
-    type:
-      - l2
-      - l3
-      - trunk
-      - app
-      - repl
-      - wan
-      - dns
-    direction:
-      - uni
-      - bi
-    direction_default: uni (from -> to)
-    ports: text, e.g. 443/tcp (optional)
-    label: text (optional)
+# Every field the page understands, used at least once. No _reference block:
+# the fields are the documentation. Values are always text - 1.20 stays "1.20".
+
 meta:
-  title: System Landscape
-  subtitle: Example
+  title: Acme Payments Platform
+  subtitle: Two production sites, shared services and the edge - example model
+
+# external systems the panel links into. {field} is filled from the selected object, then its
+# parents (interface -> node -> item -> zone); a link with an unfilled field is not shown
+systems:
+  - id: ipam
+    name: NetBox IPAM
+    home: https://netbox.acme.example/
+    url: https://netbox.acme.example/ipam/ip-addresses/?q={ip|addr}   # |addr drops the /24
+    on: [node, interface]
+  - id: dcim
+    name: NetBox DCIM
+    url: https://netbox.acme.example/dcim/devices/?serial={serial}
+    on: node
+  - id: grafana
+    name: Grafana
+    home: https://grafana.acme.example/
+    url: https://grafana.acme.example/d/k8s-workload?var-cluster={item.id}&var-namespace={namespace}&var-workload={name}
+    on: workload
+  - id: dns
+    name: DNS records
+    home: https://dns.acme.example/
+    url: https://dns.acme.example/zones/{zone}/records?name={record}   # no "on": only where named
+  - id: netconfig
+    name: Config backup
+    url: https://oxidized.acme.example/node/fetch/{name}
+
+# edge and shared are drawn as full-width bands above the sites, outside as one below them
 edge:
   - id: z-edge
-    name: Edge
+    name: Internet Edge
     type: edge
+    tag: AS64500
     items:
-      - id: edge-1
-        name: Edge Service
+      - id: edge-cdn
+        name: CDN / WAF
         kind: edge
+        subtitle: Anycast, TLS terminated at the edge
+        details:
+          Provider: Acme CDN
+          Certificate: "*.acme.example, RSA 2048"
+          Rate limit: 2000 req/s per IP
+      - id: edge-dns
+        name: Authoritative DNS
+        kind: dns
+        subtitle: acme.example
+        details:
+          Zones: "3"
+          DNSSEC: signed, KSK rollover every 12 months
+        external:
+          - system: dns             # fields the template needs, supplied here
+            zone: acme.example
+            record: "@"
+          - label: Registrar        # a one-off link, no system needed
+            url: https://registrar.example/domains/acme.example
+        nodes:
+          - name: ns1
+            role: primary
+            ip: 198.51.100.10
+            os: BIND 9.18
+            rack: EQX-FR5 / 12
+          - name: ns2
+            role: secondary
+            ip: 203.0.113.10
+            os: BIND 9.18
+            rack: EQX-FR7 / 04
+      - id: edge-gw
+        name: Border Routers
+        kind: router
+        color: "#c2410c"          # item colour overrides the zone colour
+        subtitle: BGP, dual upstream
+        nodes:
+          - name: bgw-1
+            role: active
+            ip: 198.51.100.2
+            mgmt: 10.255.0.2
+            model: Juniper MX204
+            firmware: "21.4R3"
+            os: Junos
+            serial: JN0012345
+            rack: EQX-FR5 / 01
+            notes: Holds the default route for both sites
+            external: netconfig     # a system id; {name} is this node's name
+            Maintenance window: Tue 02:00-04:00 UTC   # any extra key is shown too
+          - name: bgw-2
+            role: standby
+            ip: 203.0.113.2
+            mgmt: 10.255.0.3
+            model: Juniper MX204
+            firmware: "21.4R3"
+            os: Junos
+            serial: JN0012346
+            rack: EQX-FR7 / 01
+
 shared:
   - id: z-shared
-    name: Shared
+    name: Shared Services
     type: shared
+    tag: cross-site
     items:
-      - id: shared-1
-        name: Shared Service
+      - id: sh-idp
+        name: Identity Provider
         kind: service
+        subtitle: OIDC for staff and services
+        details:
+          Product: Keycloak 24
+          Realms: staff, services
+          HA: active/active across both sites
+      - id: sh-log
+        name: Log & Metrics
+        kind: cluster
+        subtitle: Ingest for everything below
+        details:
+          Retention: 90 days hot, 1 year cold
+          Ingest: ~180 GB/day
+        nodes: [log-1, log-2, log-3]     # plain names are fine too
+      - id: sh-hsm
+        name: Payment HSM
+        kind: hsm
+        color: "#9333ea"
+        subtitle: PIN and key operations, PCI scope
+        details:
+          Model: Thales payShield 10K
+          Firmware: "1.20"
+          Key ceremony: quarterly, four-eyes
+
 sites:
-  - id: a
-    name: Site A
+  - id: fra
+    name: Frankfurt (primary)
+    meta: EQX-FR5 · 2 racks · active
     zones:
-      - id: a-front
-        name: Frontend
-        type: dmz
+      - id: fra-net
+        name: Core Network
+        type: network
+        tag: VLAN 10-19
         items:
-          - id: a-front-1
-            name: Frontend Service
-            kind: service
+          - id: fra-sw
+            name: Core Switches
+            kind: switch
+            subtitle: MLAG pair, 25G to servers
             nodes:
-              - node-1
-              - node-2
-      - id: a-back
+              - name: sw-1
+                role: MLAG primary
+                ip: 10.10.0.2
+                mgmt: 10.255.1.2
+                model: Arista 7050SX3
+                firmware: "4.29.2F"
+                serial: JPE19230012
+                rack: FR5-A / 40
+              - name: sw-2
+                role: MLAG secondary
+                ip: 10.10.0.3
+                mgmt: 10.255.1.3
+                model: Arista 7050SX3
+                firmware: "4.29.2F"
+                serial: JPE19230013
+                rack: FR5-B / 40
+      - id: fra-fw
+        name: Perimeter Firewall
+        type: fw
+        tag: HA pair
+        items:
+          - id: fra-fw-1
+            name: Firewall Cluster
+            kind: firewall
+            subtitle: North-south policy, IPS enabled
+            details:
+              Product: PAN-OS 11.1
+              Policy: reviewed quarterly
+            nodes:
+              - name: fw-a
+                role: active
+                ip: 10.10.1.2
+                mgmt: 10.255.1.10
+                model: PA-3440
+                os: PAN-OS
+                firmware: "11.1.2-h3"
+                serial: 001801099999
+                rack: FR5-A / 38
+                notes: Fails over to fw-b on link loss
+              - name: fw-b
+                role: passive
+                ip: 10.10.1.3
+                mgmt: 10.255.1.11
+                model: PA-3440
+                os: PAN-OS
+                firmware: "11.1.2-h3"
+                serial: 001801099998
+                rack: FR5-B / 38
+      - id: fra-dmz
+        name: DMZ
+        type: dmz
+        tag: VLAN 20
+        items:
+          - id: fra-lb
+            name: Ingress Load Balancer
+            kind: lb
+            subtitle: TLS passthrough to the API tier
+            details:
+              Product: HAProxy 2.9
+              VIP: 10.10.20.10
+            nodes: [lb-1, lb-2]
+      - id: fra-platform
+        name: Container Platform
+        type: backend
+        tag: VLAN 30
+        items:
+          - id: k8s-fra
+            name: Kubernetes prod-fra
+            kind: k8s cluster
+            subtitle: Runs the payment applications
+            # cluster facts; the presence of this key groups the node chips by role
+            cluster:
+              Distribution: RKE2
+              Version: v1.31.2
+              CNI: Cilium 1.16, kube-proxy replacement
+              Pod CIDR: 10.42.0.0/16
+              Service CIDR: 10.43.0.0/16
+              Ingress: ingress-nginx, VIP 10.10.20.20
+            external:
+              - label: Rancher
+                url: https://rancher.acme.example/dashboard/c/{id}/explorer
+              - system: dns
+                label: API DNS record
+                zone: acme.example
+                record: api.k8s-fra
+            details:
+              Upgrades: rolling, one pool at a time, drain timeout 15 min
+              etcd backup: snapshot every 6 h to the object storage
+            nodes:
+              - name: cp-1
+                role: control plane
+                model: Dell R660
+                firmware: "2.10.2"
+                os: SLES 15 SP6
+                serial: 7KJ4CP1
+                rack: FR5-A / 30
+                notes: etcd voting member
+                interfaces:
+                  - name: eno1
+                    network: fra-net
+                    ip: 10.10.0.31/24
+                    vlan: "10"
+                    mac: 3c:ec:ef:11:00:01
+                    notes: Node and API traffic
+                  - name: eno2
+                    network: fra-platform
+                    ip: 10.10.30.31/24
+                    vlan: "30"
+                    mtu: "9000"
+                    mac: 3c:ec:ef:11:00:02
+                    notes: Pod overlay and etcd peers
+                  - name: idrac
+                    network: fra-mgmt
+                    ip: 10.255.1.31/24
+                    vlan: "255"
+                    notes: Out-of-band only
+              - name: cp-2
+                role: control plane
+                model: Dell R660
+                os: SLES 15 SP6
+                serial: 7KJ4CP2
+                rack: FR5-B / 30
+                interfaces:
+                  - name": eno1
+                    network: fra-net
+                    ip: 10.10.0.32/24
+                    vlan: "10"
+                  - name: eno2
+                    network: fra-platform
+                    ip: 10.10.30.32/24
+                    vlan: "30"
+                    mtu: "9000"
+                  - name: idrac
+                    network: fra-mgmt
+                    ip: 10.255.1.32/24
+              - name: cp-3
+                role: control plane
+                model: Dell R660
+                os: SLES 15 SP6
+                serial: 7KJ4CP3
+                rack: FR5-A / 31
+                interfaces:
+                  - name: eno1
+                    network: fra-net
+                    ip: 10.10.0.33/24
+                    vlan: "10"
+                  - name: eno2
+                    network: fra-platform
+                    ip: 10.10.30.33/24
+                    vlan: "30"
+                    mtu: "9000"
+              - name: w-1
+                role: worker
+                model: Dell R760
+                firmware: "2.10.2"
+                os: SLES 15 SP6
+                serial: 7KJ4W01
+                rack: FR5-A / 32
+                notes: Carries the ingress DaemonSet
+                interfaces:
+                  - name: eno1
+                    network: fra-net
+                    ip: 10.10.0.41/24
+                    vlan: "10"
+                    mac: 3c:ec:ef:12:00:01
+                  - name: eno2
+                    network: fra-platform
+                    ip: 10.10.30.41/24
+                    vlan: "30"
+                    mtu: "9000"
+                  - name: ens3f0
+                    network: fra-stor
+                    ip: 10.10.40.41/24
+                    vlan: "40"
+                    mtu: "9000"
+                    notes: Storage traffic only, no default route
+                  - name: idrac
+                    network: fra-mgmt
+                    ip: 10.255.1.41/24
+              - name: w-2
+                role: worker
+                model: Dell R760
+                os: SLES 15 SP6
+                serial: 7KJ4W02
+                rack: FR5-B / 32
+                interfaces:
+                  - name: eno1
+                    network: fra-net
+                    ip: 10.10.0.42/24
+                    vlan: "10"
+                  - name: eno2
+                    network: fra-platform
+                    ip: 10.10.30.42/24
+                    vlan: "30"
+                    mtu: "9000"
+                  - name: ens3f0
+                    network: fra-stor
+                    ip: 10.10.40.42/24
+                    vlan: "40"
+                    mtu: "9000"
+              - name: w-3
+                role: worker
+                model: Dell R760
+                os: SLES 15 SP6
+                serial: 7KJ4W03
+                rack: FR5-A / 33
+                interfaces:
+                  - name: eno1
+                    network: fra-net
+                    ip: 10.10.0.43/24
+                    vlan: "10"
+                  - name: eno2
+                    network: fra-platform
+                    ip: 10.10.30.43/24
+                    vlan: "30"
+                    mtu: "9000"
+              - name: w-4
+                role: worker
+                model: Dell R760
+                os: SLES 15 SP6
+                serial: 7KJ4W04
+                rack: FR5-B / 33
+                interfaces:
+                  - name: eno1
+                    network: fra-net
+                    ip: 10.10.0.44/24
+                    vlan: "10"
+                  - name: eno2
+                    network: fra-platform
+                    ip: 10.10.30.44/24
+                    vlan: "30"
+                    mtu: "9000"
+              - name: s-1
+                role: storage
+                model: Dell R760xd
+                os: SLES 15 SP6
+                serial: 7KJ4S01
+                rack: FR5-A / 34
+                notes: Longhorn replica target, tainted for storage pods
+                interfaces:
+                  - name: eno1
+                    network: fra-net
+                    ip: 10.10.0.51/24
+                    vlan: "10"
+                  - name: ens3f0
+                    network: fra-stor
+                    ip: 10.10.40.51/24
+                    vlan: "40"
+                    mtu: "9000"
+              - name: s-2
+                role: storage
+                model: Dell R760xd
+                os: SLES 15 SP6
+                serial: 7KJ4S02
+                rack: FR5-B / 34
+                interfaces:
+                  - name: eno1
+                    network: fra-net
+                    ip: 10.10.0.52/24
+                    vlan: "10"
+                  - name: ens3f0
+                    network: fra-stor
+                    ip: 10.10.40.52/24
+                    vlan: "40"
+                    mtu: "9000"
+            workloads:
+              - id: wl-api
+                namespace: payments
+                name: api
+                kind: Deployment
+                replicas: "6"
+                image: registry.acme.example/payments/api:2.14.3
+                ports: 8443/tcp
+                notes: HPA between 4 and 12 replicas
+                external:
+                  - label: Runbook
+                    url: https://wiki.acme.example/runbooks/{namespace}-{name}
+              - id: wl-ledger
+                namespace: payments
+                name: ledger
+                kind: StatefulSet
+                replicas: "3"
+                image: registry.acme.example/payments/ledger:5.2.0
+                ports: 9000/tcp
+                notes: Leader election via the Kubernetes API
+              - id: wl-ingress
+                namespace: ops
+                name: ingress-nginx
+                kind: DaemonSet
+                ports: 443/tcp
+                notes: Host network on the worker pool
+              - id: wl-etcd-backup
+                namespace: ops
+                name: etcd-backup
+                kind: CronJob
+                notes: Every 6 h, writes to the object storage
+      - id: fra-back
         name: Backend
         type: backend
         items:
-          - id: a-back-1
-            name: Backend Service
-            kind: service
+          - id: fra-db
+            name: Ledger Database
+            kind: cluster
+            subtitle: PostgreSQL, synchronous standby
+            details:
+              Version: PostgreSQL 16.2
+              Backup: WAL to object storage, PITR 7 days
             nodes:
-              - node-1
-              - node-2
-  - id: b
-    name: Site B
-    zones:
-      - id: b-front
-        name: Frontend
-        type: dmz
+              - name: db-1
+                role: primary
+                ip: 10.10.30.11
+                mgmt: 10.255.1.21
+                model: Dell R660
+                firmware: "2.10.2"
+                os: Debian 12
+                serial: 7KJ4LM3
+                rack: FR5-A / 22
+                notes: Takes all writes
+              - name: db-2
+                role: synchronous standby
+                ip: 10.10.30.12
+                mgmt: 10.255.1.22
+                model: Dell R660
+                firmware: "2.10.2"
+                os: Debian 12
+                serial: 7KJ4LM4
+                rack: FR5-B / 22
+      - id: fra-stor
+        name: Storage
+        type: storage
+        tag: NVMe
         items:
-          - id: b-front-1
-            name: Frontend Service
-            kind: service
+          - id: fra-san
+            name: Object Storage
+            kind: storage
+            subtitle: S3 compatible, erasure coded
+            details:
+              Product: MinIO
+              Usable: 420 TB
+      - id: fra-mgmt
+        name: Out-of-band Management
+        type: mgmt
+        tag: VLAN 255
+        items:
+          - id: fra-bmc
+            name: BMC Network
+            kind: vm
+            subtitle: Jump host and IPMI access
+            details:
+              Access: bastion only, MFA
+              Sweep: monthly credential rotation
+
+  - id: ams
+    name: Amsterdam (standby)
+    meta: EQX-AM3 · 1 rack · warm standby
+    zones:
+      - id: ams-net
+        name: Core Network
+        type: network
+        tag: VLAN 110-119
+        items:
+          - id: ams-sw
+            name: Core Switch
+            kind: switch
+            subtitle: Single switch, standby site
             nodes:
-              - node-1
-              - node-2
-      - id: b-back
+              - name: sw-1
+                role: standalone
+                ip: 10.20.0.2
+                mgmt: 10.255.2.2
+                model: Arista 7050SX3
+                firmware: "4.29.2F"
+                serial: JPE19230099
+                rack: AM3-C / 40
+      - id: ams-dmz
+        name: DMZ
+        type: dmz
+        tag: VLAN 120
+        color: "#0f766e"          # zone colour overrides the type colour
+        items:
+          - id: ams-lb
+            name: Ingress Load Balancer
+            kind: lb
+            subtitle: Cold until failover
+            nodes: [lb-1]
+          - id: ams-api
+            name: Payments API
+            kind: service
+            subtitle: Scaled to zero, ready to take over
+            details:
+              Replicas: "0 (standby)"
+      - id: ams-back
         name: Backend
         type: backend
         items:
-          - id: b-back-1
-            name: Backend Service
-            kind: service
+          - id: ams-db
+            name: Ledger Database
+            kind: cluster
+            subtitle: Streaming replica of Frankfurt
+            details:
+              Version: PostgreSQL 16.2
+              Lag budget: under 30 s
             nodes:
-              - name: node1
-                role: role
-                ip: 0.0.0.0
-                mgmt: 0.0.0.0
-              - name: node2
-                role: role
-                ip: 0.0.0.0
-                mgmt: 0.0.0.0
+              - name: db-1
+                role: hot standby
+                ip: 10.20.30.11
+                mgmt: 10.255.2.21
+                model: Dell R660
+                firmware: "2.10.2"
+                os: Debian 12
+                serial: 7KJ4LN1
+                rack: AM3-C / 22
+                notes: Promoted manually during a failover
+
+# services the platform uses but doesn't run
+outside:
+  - id: z-saas
+    name: External Services
+    type: external
+    tag: third party
+    items:
+      - id: ext-psp
+        name: Card Processor
+        kind: saas
+        subtitle: Card authorisation and settlement
+        details:
+          Endpoint: api.cardproc.example
+          Contract: PCI DSS level 1 service provider
+        external:
+          - label: Status page
+            url: https://status.cardproc.example/
+      - id: ext-acme
+        name: Public CA (ACME)
+        kind: saas
+        subtitle: TLS certificates for the edge
+      - id: ext-smtp
+        name: Mail Relay
+        kind: saas
+        subtitle: Transactional e-mail to customers
+
 links:
-  - from: edge-1
-    to: a-front-1
+  # outside - calls out to third-party services
+  - from: k8s-fra
+    fromWorkload: wl-api
+    to: ext-psp
+    type: app
+    ports: 443/tcp
+    label: Card authorisation
+  - from: edge-cdn
+    to: ext-acme
+    type: app
+    ports: 443/tcp
+    label: Certificate renewal
+  - from: k8s-fra
+    to: ext-smtp
+    type: app
+    ports: 587/tcp
+    label: Receipts
+
+  # wan - between sites and towards the edge
+  - from: edge-gw
+    to: fra-fw-1
     type: wan
     ports: 443/tcp
+    label: Transit Frankfurt
     direction: uni
-  - from: edge-1
-    to: b-front-1
+  - from: edge-gw
+    to: ams-sw
     type: wan
     ports: 443/tcp
+    label: Transit Amsterdam
     direction: uni
-  - from: a-front-1
-    to: a-back-1
-    type: app
-    ports: 8080/tcp
-    direction: uni
-  - from: b-front-1
-    to: b-back-1
-    type: app
-    ports: 8080/tcp
-    direction: uni
-  - from: a-back-1
-    to: shared-1
-    type: app
-    ports: 514/udp
-    direction: uni
-  - from: b-back-1
-    to: shared-1
-    type: app
-    ports: 514/udp
-    direction: uni
-  - from: a-back-1
-    fromNode: node-1
-    to: a-back-1
-    toNode: node-2
-    type: repl
-    ports: 5432/tcp
+  - from: fra-sw
+    to: ams-sw
+    type: wan
+    label: Site interconnect
+    ports: IPsec/ESP
     direction: bi
-  - from: a-back-1
-    fromNode: node-1
-    to: b-back-1
-    toNode: node1
+
+  # dns
+  - from: edge-dns
+    to: edge-cdn
+    type: dns
+    ports: 53/udp
+    label: Zone for the public names
+    direction: uni
+
+  # trunk / l2 / l3 inside a site
+  - from: fra-sw
+    to: fra-fw-1
+    type: trunk
+    ports: 802.1Q
+    label: Uplink to the firewall
+    direction: bi
+  - from: fra-sw
+    fromNode: sw-1
+    to: fra-sw
+    toNode: sw-2
+    type: l2
+    ports: 2x100G
+    label: MLAG peer link
+    direction: bi
+  - from: fra-fw-1
+    to: fra-lb
+    type: l3
+    ports: 443/tcp
+    label: DMZ routing
+    direction: uni
+  - from: ams-sw
+    to: ams-lb
+    type: l3
+    ports: 443/tcp
+    direction: uni
+
+  # application paths
+  - from: edge-cdn
+    to: fra-lb
+    type: app
+    ports: 443/tcp
+    label: Origin pull
+    direction: uni
+  - from: fra-lb
+    to: k8s-fra
+    toWorkload: ops/ingress-nginx
+    type: app
+    ports: 443/tcp
+    label: Into the cluster ingress
+    direction: uni
+  - from: ams-lb
+    to: ams-api
+    type: app
+    ports: 8443/tcp
+    direction: uni
+  - from: k8s-fra
+    fromWorkload: ops/ingress-nginx
+    to: k8s-fra
+    toWorkload: payments/api
+    type: app
+    ports: 8443/tcp
+    label: Ingress to service
+    direction: uni
+  - from: k8s-fra
+    fromWorkload: payments/api
+    to: k8s-fra
+    toWorkload: payments/ledger
+    type: app
+    ports: 9000/tcp
+    label: gRPC, pod to pod
+    direction: uni
+  - from: k8s-fra
+    fromWorkload: payments/ledger
+    to: fra-db
+    type: app
+    ports: 5432/tcp
+    label: Writes the ledger
+    direction: uni
+  - from: k8s-fra
+    fromWorkload: payments/api
+    to: sh-idp
+    type: app
+    ports: 443/tcp
+    label: Token introspection
+    direction: uni
+  - from: k8s-fra
+    fromWorkload: payments/ledger
+    to: sh-hsm
+    type: app
+    ports: 1500/tcp
+    label: PIN block translation
+    direction: bi
+  - from: k8s-fra
+    to: sh-log
+    type: app
+    ports: 514/udp
+    label: Cluster logs and metrics
+    direction: uni
+  - from: fra-db
+    to: fra-san
+    type: app
+    ports: 443/tcp
+    label: WAL archive
+    direction: uni
+  - from: fra-bmc
+    to: fra-sw
+    type: app
+    ports: 623/udp
+    label: IPMI
+    direction: uni
+
+  # replication, node to node
+  - from: fra-db
+    fromNode: db-1
+    to: fra-db
+    toNode: db-2
     type: repl
     ports: 5432/tcp
+    label: Synchronous standby
+    direction: bi
+  - from: fra-db
+    fromNode: db-1
+    to: ams-db
+    toNode: db-1
+    type: repl
+    ports: 5432/tcp
+    label: Streaming replication
+    direction: uni
+
+  # interface-level: which NIC of which node carries the connection
+  - from: k8s-fra
+    fromNode: w-1
+    fromIface: ens3f0
+    to: fra-san
+    type: l2
+    ports: 10G
+    label: Storage network, MTU 9000
+    direction: bi
+  - from: k8s-fra
+    fromNode: s-1
+    fromIface: ens3f0
+    to: fra-san
+    type: l2
+    ports: 10G
+    label: Longhorn replica traffic
+    direction: bi
+  - from: k8s-fra
+    fromNode: cp-1
+    fromIface: eno2
+    to: k8s-fra
+    toNode: cp-2
+    toIface: eno2
+    type: l2
+    ports: 2380/tcp
+    label: etcd peer
+    direction: bi
+  - from: k8s-fra
+    fromNode: cp-1
+    fromIface: eno1
+    to: fra-sw
+    toNode: sw-1
+    type: trunk
+    ports: 802.1Q
+    label: VLAN 10/30/40/255 tagged
+    direction: bi
+  - from: k8s-fra
+    fromWorkload: ops/etcd-backup
+    to: fra-san
+    type: app
+    ports: 443/tcp
+    label: etcd snapshots
     direction: uni
 </script>
 <script>
