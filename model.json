@@ -1,4 +1,59 @@
 {
+  "_reference": {
+    "_note": "Documentation only - ignored by the page. Fields marked optional can be omitted.",
+    "meta": {
+      "title": "text (optional)",
+      "subtitle": "text (optional)"
+    },
+    "edge | shared": "list of zones, drawn as full-width bands above the sites",
+    "sites": {
+      "id": "unique id",
+      "name": "text",
+      "meta": "text (optional)",
+      "zones": "list of zones"
+    },
+    "zone": {
+      "id": "unique id",
+      "name": "text",
+      "type": ["edge", "network", "fw", "dmz", "mgmt", "backend", "storage", "shared"],
+      "tag": "text (optional)",
+      "color": "CSS color (optional, overrides type color)",
+      "items": "list of items"
+    },
+    "item": {
+      "id": "unique id, referenced by links",
+      "name": "text",
+      "kind": "free text, e.g. service, cluster, vm, edge, gateway, lb, dns, router, switch, firewall, storage, hsm",
+      "subtitle": "text (optional)",
+      "color": "CSS color (optional)",
+      "details": "object of key/value text pairs (optional)",
+      "nodes": "list of node names or node objects (optional)"
+    },
+    "node": {
+      "name": "unique within the item, referenced by links",
+      "role": "text (optional)",
+      "ip": "text (optional)",
+      "mgmt": "text (optional)",
+      "model": "text (optional)",
+      "firmware": "text (optional)",
+      "os": "text (optional)",
+      "serial": "text (optional)",
+      "rack": "text (optional)",
+      "notes": "text (optional)",
+      "*": "any other key is shown as an extra property"
+    },
+    "link": {
+      "from": "item id",
+      "fromNode": "node name within the from item (optional)",
+      "to": "item id",
+      "toNode": "node name within the to item (optional)",
+      "type": ["l2", "l3", "trunk", "app", "repl", "wan", "dns"],
+      "direction": ["uni", "bi"],
+      "direction_default": "uni (from -> to)",
+      "ports": "text, e.g. 443/tcp (optional)",
+      "label": "text (optional)"
+    }
+  },
   "meta": {
     "title": "System Landscape",
     "subtitle": "Example"
@@ -82,12 +137,13 @@
     }
   ],
   "links": [
-    { "from": "edge-1", "to": "a-front-1", "type": "wan" },
-    { "from": "edge-1", "to": "b-front-1", "type": "wan" },
-    { "from": "a-front-1", "to": "a-back-1", "type": "app" },
-    { "from": "b-front-1", "to": "b-back-1", "type": "app" },
-    { "from": "shared-1", "to": "a-back-1", "type": "app" },
-    { "from": "shared-1", "to": "b-back-1", "type": "app" },
-    { "from": "a-back-1", "to": "b-back-1", "type": "repl" }
+    { "from": "edge-1", "to": "a-front-1", "type": "wan", "ports": "443/tcp", "direction": "uni" },
+    { "from": "edge-1", "to": "b-front-1", "type": "wan", "ports": "443/tcp", "direction": "uni" },
+    { "from": "a-front-1", "to": "a-back-1", "type": "app", "ports": "8080/tcp", "direction": "uni" },
+    { "from": "b-front-1", "to": "b-back-1", "type": "app", "ports": "8080/tcp", "direction": "uni" },
+    { "from": "a-back-1", "to": "shared-1", "type": "app", "ports": "514/udp", "direction": "uni" },
+    { "from": "b-back-1", "to": "shared-1", "type": "app", "ports": "514/udp", "direction": "uni" },
+    { "from": "a-back-1", "fromNode": "node-1", "to": "a-back-1", "toNode": "node-2", "type": "repl", "ports": "5432/tcp", "direction": "bi" },
+    { "from": "a-back-1", "fromNode": "node-1", "to": "b-back-1", "toNode": "node1", "type": "repl", "ports": "5432/tcp", "direction": "uni" }
   ]
 }
