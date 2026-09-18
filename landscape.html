@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Systemlandschaft</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f6f4;--panel:#fff;--ink:#1d1d1b;--ink2:#5c5c57;--ink3:#8b8b84;--line:#dedeD9;--line2:#c6c6c0;--sel:#185fa5;
+  --edge:#0369a1;--net:#155e75;--fw:#a32d2d;--dmz:#b45309;--mgmt:#3f4d9c;--back:#0f6e56;--stor:#7a3b86;--shared:#6b21a8;
+  --tint:14%;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#15151a;--panel:#1e1e24;--ink:#ececea;--ink2:#b3b3ae;--ink3:#87877f;--line:#32323a;--line2:#45454f;--sel:#85b7eb;
+  --edge:#7cc4ea;--net:#7fc8de;--fw:#f09595;--dmz:#f0b356;--mgmt:#a9b3f2;--back:#67d0ab;--stor:#d7a7e0;--shared:#d0a9f0;
+  --tint:20%;
+}}
+:root[data-theme="dark"]{
+  --bg:#15151a;--panel:#1e1e24;--ink:#ececea;--ink2:#b3b3ae;--ink3:#87877f;--line:#32323a;--line2:#45454f;--sel:#85b7eb;
+  --edge:#7cc4ea;--net:#7fc8de;--fw:#f09595;--dmz:#f0b356;--mgmt:#a9b3f2;--back:#67d0ab;--stor:#d7a7e0;--shared:#d0a9f0;
+  --tint:20%;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;line-height:1.45;padding:22px 18px 70px}
+.wrap{max-width:1560px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;justify-content:space-between}
+h1{font-size:21px;font-weight:600;margin:0}
+.sub{font-size:12.5px;color:var(--ink3)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 10px}
+button{font:inherit;font-size:12px;padding:6px 10px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--ink3)}
+button.on{background:var(--sel);border-color:var(--sel);color:#fff}
+button.mini{padding:2px 7px;font-size:11px;border-radius:6px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--ink2);margin:0 0 14px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.err{background:color-mix(in srgb,var(--fw) 12%,transparent);border:1px solid color-mix(in srgb,var(--fw) 45%,transparent);color:var(--fw);padding:10px 12px;border-radius:9px;font-size:12.5px;margin-bottom:14px}
+.err code{font-family:"JetBrains Mono",monospace;font-size:11.5px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px;align-items:start}
+@media(max-width:1020px){.layout{grid-template-columns:1fr}}
+#canvas{position:relative}
+#wires{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:5}
+.band{margin-bottom:14px}
+.band .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:10px}
+.sites{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:14px}
+.site{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px}
+.site h2{font-size:14px;font-weight:600;margin:0 0 1px}
+.site .meta{font-size:11px;color:var(--ink3);margin-bottom:11px}
+.zone{border:1px solid;border-radius:10px;padding:9px 10px 11px;margin-bottom:9px}
+.band .zone{margin-bottom:0}
+.zone h3{font-size:12px;font-weight:600;margin:0 0 7px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.zone .tag{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:400;color:var(--ink3)}
+.items{display:flex;flex-wrap:wrap;gap:7px}
+.item{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 9px;flex:1 1 150px;min-width:142px;cursor:pointer;text-align:left;color:inherit;z-index:6;font:inherit}
+.item:hover{border-color:var(--ink3)}
+.item.sel{box-shadow:0 0 0 2px color-mix(in srgb,var(--sel) 30%,transparent);border-color:var(--sel)}
+.item.rel{border-color:var(--sel)}
+.item.dim{opacity:.32}
+.item .t{font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.item .kind{font-family:"JetBrains Mono",monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-top:1px}
+.item .d{font-size:10.5px;color:var(--ink3);margin-top:2px}
+.nodes{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
+.n{font-family:"JetBrains Mono",monospace;font-size:9px;padding:1px 4px;border-radius:4px;border:1px solid var(--line2);color:var(--ink2)}
+.n.nsel{cursor:pointer}
+.n.nsel:hover{border-color:var(--sel);color:var(--ink)}
+.n.nactive{border-color:var(--sel);color:var(--sel);background:color-mix(in srgb,var(--sel) 12%,transparent)}
+aside{position:sticky;top:14px;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:14px;max-height:calc(100vh - 28px);overflow:auto}
+aside h4{margin:0 0 3px;font-size:14px;font-weight:600}
+aside .k{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--ink3)}
+h5{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin:14px 0 6px;font-weight:500}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:0}
+dt{color:var(--ink3);font-size:11px}
+dd{margin:0;font-size:11.5px;word-break:break-word}
+dd.mono{font-family:"JetBrains Mono",monospace;font-size:11px}
+.conn{font-size:11.5px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;margin-bottom:5px;cursor:pointer;background:none;width:100%;text-align:left;color:inherit;font-family:inherit}
+.conn:hover{border-color:var(--sel)}
+.conn em{font-style:normal;color:var(--ink3);font-size:10.5px;display:block;margin-top:1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1 id="title">Systemlandschaft</h1><div class="sub" id="subtitle"></div></div>
+  <div class="sub">Element oder Node anklicken für Details</div>
+</header>
+
+<div class="toolbar">
+  <button id="btn-reload">Modell neu laden</button>
+  <button id="btn-wires" class="on">Verbindungen zeichnen</button>
+  <button id="btn-clear">Auswahl aufheben</button>
+  <span class="sub" id="status" style="align-self:center"></span>
+</div>
+
+<div id="error" style="display:none" class="err"></div>
+<div class="legend" id="legend"></div>
+
+<div class="layout">
+  <div id="canvas">
+    <svg id="wires"></svg>
+    <div id="edge-band" class="band"></div>
+    <div id="shared-band" class="band"></div>
+    <div class="sites" id="sites"></div>
+  </div>
+  <aside id="panel"></aside>
+</div>
+</div>
+
+<script src="model.js"></script>
+<script>
+const MODEL_URL = "model.json";
+const ZONECOLOR = {edge:"var(--edge)", network:"var(--net)", fw:"var(--fw)", dmz:"var(--dmz)", mgmt:"var(--mgmt)", backend:"var(--back)", storage:"var(--stor)", shared:"var(--shared)"};
+const LINKCOLOR = {l2:"#378ADD", l3:"#D85A30", trunk:"#1D9E75", app:"#7F77DD", repl:"#D4537E", wan:"#BA7517", dns:"#639922"};
+const LINKNAME = {l2:"L2 / Node-Anbindung", l3:"L3 / Routing", trunk:"Uplink / Trunk", app:"Applikation", repl:"Replikation", wan:"Standortkopplung", dns:"DNS"};
+const NODEFIELDS = [["role","Rolle"],["ip","IP-Adresse"],["mgmt","Management / BMC"],["model","Modell"],["firmware","Firmware / BIOS"],["os","Betriebssystem"],["serial","Seriennummer"],["rack","Rack / Standort"],["notes","Notizen"]];
+const EMPTY = {meta:{title:"Systemlandschaft", subtitle:""}, edge:[], shared:[], sites:[], links:[]};
+
+let model = EMPTY, selected = null, selectedNode = null, drawWires = true;
+
+function esc(s){ return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function normNodes(item){
+  const list = (item.nodes||[]).map(n => typeof n === "string" ? {name:n} : (n||{}));
+  item.nodes = list; return list;
+}
+function allZones(){
+  const out = [];
+  (model.edge||[]).forEach(z=>out.push({zone:z, scope:"Edge"}));
+  (model.shared||[]).forEach(z=>out.push({zone:z, scope:"Übergreifend"}));
+  (model.sites||[]).forEach(s=>(s.zones||[]).forEach(z=>out.push({zone:z, scope:s.name})));
+  return out;
+}
+function allItems(){
+  const out = [];
+  allZones().forEach(({zone,scope})=>(zone.items||[]).forEach(i=>out.push({item:i, zone, scope})));
+  return out;
+}
+function find(id){ return allItems().find(x=>x.item.id===id); }
+function linksOf(id){ return (model.links||[]).filter(l=>l.from===id||l.to===id); }
+function zoneColor(z){ return z.color || ZONECOLOR[z.type] || "var(--mgmt)"; }
+
+async function loadModel(){
+  const st = document.getElementById("status");
+  const err = document.getElementById("error");
+  st.textContent = "lade " + MODEL_URL + " …";
+  try{
+    const res = await fetch(MODEL_URL, {cache:"no-store"});
+    if(!res.ok) throw new Error(res.status + " " + res.statusText);
+    model = await res.json();
+    err.style.display = "none";
+    st.textContent = MODEL_URL + " geladen · " + new Date().toLocaleTimeString("de-DE");
+  }catch(e){
+    if(window.LANDSCAPE_MODEL){
+      model = structuredClone(window.LANDSCAPE_MODEL);
+      st.textContent = "Fallback: model.js";
+      err.style.display = "block";
+      err.innerHTML = "<code>" + esc(MODEL_URL) + "</code> konnte nicht geladen werden (" + esc(e.message) + ") — angezeigt wird das eingebettete <code>model.js</code>. Beim Öffnen per <code>file://</code> blockiert der Browser <code>fetch</code>; über einen Webserver ausliefern, z. B. <code>python3 -m http.server</code>.";
+    }else{
+      model = structuredClone(EMPTY);
+      st.textContent = "";
+      err.style.display = "block";
+      err.innerHTML = "<code>" + esc(MODEL_URL) + "</code> konnte nicht geladen werden (" + esc(e.message) + "). Die Datei muss neben dieser HTML-Datei liegen und über HTTP ausgeliefert werden, z. B. <code>python3 -m http.server</code> im selben Verzeichnis.";
+    }
+  }
+  selected = null; selectedNode = null;
+  render();
+}
+
+function render(){
+  document.getElementById("title").textContent = model.meta?.title || "Systemlandschaft";
+  document.getElementById("subtitle").textContent = model.meta?.subtitle || "";
+  document.getElementById("legend").innerHTML = allZones().map(({zone})=>
+    `<span><i class="dot" style="background:${esc(zoneColor(zone))}"></i>${esc(zone.name)}</span>`).join("");
+  renderBand("edge-band", model.edge||[]);
+  renderBand("shared-band", model.shared||[]);
+  const host = document.getElementById("sites");
+  host.innerHTML = "";
+  for(const site of model.sites||[]){
+    const sec = document.createElement("section");
+    sec.className = "site";
+    sec.innerHTML = `<h2>${esc(site.name)}</h2><div class="meta">${esc(site.meta||"")}</div>`;
+    (site.zones||[]).forEach(z=>sec.appendChild(zoneEl(z)));
+    host.appendChild(sec);
+  }
+  applySelection();
+}
+
+function renderBand(hostId, zones){
+  const host = document.getElementById(hostId);
+  host.innerHTML = "";
+  if(!zones.length) return;
+  const grid = document.createElement("div");
+  grid.className = "grid2";
+  zones.forEach(z=>grid.appendChild(zoneEl(z)));
+  host.appendChild(grid);
+}
+
+function zoneEl(zone){
+  const col = zoneColor(zone);
+  const z = document.createElement("div");
+  z.className = "zone";
+  z.style.borderColor = `color-mix(in srgb, ${col} 45%, transparent)`;
+  z.style.background = `color-mix(in srgb, ${col} var(--tint), transparent)`;
+  const head = document.createElement("h3");
+  head.style.color = col;
+  head.innerHTML = `<span>${esc(zone.name)}</span><span class="tag">${esc(zone.tag||"")}</span>`;
+  z.appendChild(head);
+  const items = document.createElement("div");
+  items.className = "items";
+  (zone.items||[]).forEach(it=>{
+    const col2 = it.color || col;
+    const b = document.createElement("button");
+    b.className = "item"; b.type = "button"; b.dataset.id = it.id;
+    if(it.color) b.style.borderColor = `color-mix(in srgb, ${it.color} 60%, transparent)`;
+    const nodes = normNodes(it).map((n,i)=>
+      `<span class="n nsel" data-item="${esc(it.id)}" data-idx="${i}" title="${esc(n.ip||"")}">${esc(n.name)}</span>`).join("");
+    b.innerHTML = `<div class="t"><i class="dot" style="background:${esc(col2)}"></i>${esc(it.name)}</div>
+      <div class="kind">${esc(it.kind||"")}</div>
+      ${it.subtitle?`<div class="d">${esc(it.subtitle)}</div>`:""}
+      ${nodes?`<div class="nodes">${nodes}</div>`:""}`;
+    b.addEventListener("click", e=>{
+      const chip = e.target.closest(".nsel");
+      if(chip){ e.stopPropagation(); selected = chip.dataset.item; selectedNode = +chip.dataset.idx; applySelection(); return; }
+      selected = (selected===it.id && selectedNode===null) ? null : it.id;
+      selectedNode = null;
+      applySelection();
+    });
+    items.appendChild(b);
+  });
+  z.appendChild(items);
+  return z;
+}
+
+function applySelection(){
+  const rel = new Set();
+  if(selected) linksOf(selected).forEach(l=>{ rel.add(l.from); rel.add(l.to); });
+  rel.delete(selected);
+  document.querySelectorAll(".item").forEach(el=>{
+    const id = el.dataset.id;
+    el.classList.toggle("sel", id===selected);
+    el.classList.toggle("rel", rel.has(id));
+    el.classList.toggle("dim", !!selected && id!==selected && !rel.has(id));
+  });
+  document.querySelectorAll(".n.nsel").forEach(el=>
+    el.classList.toggle("nactive", selectedNode!==null && el.dataset.item===selected && +el.dataset.idx===selectedNode));
+  renderPanel();
+  drawLines();
+}
+
+function renderPanel(){
+  const p = document.getElementById("panel");
+  if(!selected){
+    p.innerHTML = `<h4>Übersicht</h4>
+      <div class="k">${allItems().length} Elemente · ${(model.links||[]).length} Verbindungen · ${allZones().length} Zonen</div>
+      <h5>Verbindungstypen</h5>
+      ${Object.keys(LINKNAME).map(t=>`<div style="font-size:11.5px;display:flex;align-items:center;gap:7px;margin-bottom:4px"><i style="width:16px;height:2px;background:${LINKCOLOR[t]};display:inline-block"></i>${LINKNAME[t]}</div>`).join("")}
+      <h5>Datenquelle</h5>
+      <div style="font-size:11.5px;color:var(--ink2)">Alle Inhalte stammen aus <span class="k">${esc(MODEL_URL)}</span>. Dort ändern und „Modell neu laden“ klicken.</div>`;
+    return;
+  }
+  const hit = find(selected);
+  if(!hit){ p.innerHTML = `<h4>Unbekannt</h4><div class="k">${esc(selected)}</div>`; return; }
+  const {item:it, zone, scope} = hit;
+
+  if(selectedNode !== null){
+    const list = normNodes(it);
+    const nd = list[selectedNode];
+    if(!nd){ selectedNode = null; return renderPanel(); }
+    const known = NODEFIELDS.filter(([k])=>nd[k]).map(([k,l])=>`<dt>${l}</dt><dd class="mono">${esc(nd[k])}</dd>`).join("");
+    const extra = Object.entries(nd).filter(([k])=>k!=="name" && !NODEFIELDS.some(f=>f[0]===k))
+      .map(([k,v])=>`<dt>${esc(k)}</dt><dd class="mono">${esc(v)}</dd>`).join("");
+    p.innerHTML = `<button class="mini" id="n-back">← ${esc(it.name)}</button>
+      <h4 style="margin-top:8px">${esc(nd.name||"Node")}</h4>
+      <div class="k">node · ${esc(it.name)} · ${esc(zone.name)} · ${esc(scope)}</div>
+      <h5>Stammdaten</h5>
+      ${(known||extra) ? `<dl>${known}${extra}</dl>` : `<div style="font-size:11.5px;color:var(--ink3)">Keine Stammdaten im Modell hinterlegt.</div>`}
+      <h5>Nodes dieses Elements (${list.length})</h5>
+      <div class="nodes">${list.map((x,i)=>`<span class="n nsel ${i===selectedNode?"nactive":""}" data-item="${esc(it.id)}" data-idx="${i}">${esc(x.name||"?")}</span>`).join("")}</div>`;
+    document.getElementById("n-back").addEventListener("click", ()=>{ selectedNode = null; applySelection(); });
+    p.querySelectorAll(".n.nsel").forEach(el=>el.addEventListener("click", ()=>{ selectedNode = +el.dataset.idx; applySelection(); }));
+    return;
+  }
+
+  const det = Object.entries(it.details||{}).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
+  const list = normNodes(it);
+  const conns = linksOf(it.id).map(l=>{
+    const otherId = l.from===it.id ? l.to : l.from;
+    const other = find(otherId);
+    const dir = l.from===it.id ? "→" : "←";
+    return `<button class="conn" data-goto="${esc(otherId)}">
+      <span style="display:inline-block;width:10px;height:2px;background:${LINKCOLOR[l.type]||"#888"};vertical-align:middle;margin-right:6px"></span>
+      ${dir} ${esc(other?other.item.name:otherId)}
+      <em>${esc(LINKNAME[l.type]||l.type)}${l.label?" · "+esc(l.label):""}${l.ports?" · "+esc(l.ports):""}</em></button>`;
+  }).join("") || `<div style="font-size:11.5px;color:var(--ink3)">Keine Verbindungen.</div>`;
+
+  p.innerHTML = `<h4>${esc(it.name)}</h4>
+    <div class="k">${esc(it.kind||"")} · ${esc(scope)} · ${esc(zone.name)} · ${esc(it.id)}</div>
+    ${it.subtitle?`<div style="font-size:12px;color:var(--ink2);margin-top:8px">${esc(it.subtitle)}</div>`:""}
+    ${det?`<h5>Attribute</h5><dl>${det}</dl>`:""}
+    ${list.length?`<h5>Nodes (${list.length})</h5><div class="nodes">${list.map((n,i)=>
+      `<span class="n nsel" data-item="${esc(it.id)}" data-idx="${i}">${esc(n.name||"?")}</span>`).join("")}</div>`:""}
+    <h5>Verbindungen (${linksOf(it.id).length})</h5>${conns}`;
+
+  p.querySelectorAll(".n.nsel").forEach(el=>el.addEventListener("click", ()=>{
+    selected = el.dataset.item; selectedNode = +el.dataset.idx; applySelection();
+  }));
+  p.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click", ()=>{
+    selected = b.dataset.goto; selectedNode = null; applySelection();
+  }));
+}
+
+function drawLines(){
+  const svg = document.getElementById("wires");
+  svg.innerHTML = "";
+  if(!drawWires || !selected) return;
+  const c = document.getElementById("canvas").getBoundingClientRect();
+  svg.setAttribute("viewBox", `0 0 ${c.width} ${c.height}`);
+  svg.setAttribute("width", c.width); svg.setAttribute("height", c.height);
+  const pos = id=>{
+    const el = document.querySelector(`.item[data-id="${CSS.escape(id)}"]`);
+    if(!el) return null;
+    const r = el.getBoundingClientRect();
+    return {x:r.left-c.left+r.width/2, y:r.top-c.top+r.height/2};
+  };
+  for(const l of linksOf(selected)){
+    const a = pos(l.from), b = pos(l.to);
+    if(!a||!b) continue;
+    const mid = Math.max(30, Math.abs(b.x-a.x)/2);
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d", `M ${a.x} ${a.y} C ${a.x+(b.x>a.x?mid:-mid)} ${a.y}, ${b.x+(b.x>a.x?-mid:mid)} ${b.y}, ${b.x} ${b.y}`);
+    path.setAttribute("fill","none");
+    path.setAttribute("stroke", LINKCOLOR[l.type]||"#888");
+    path.setAttribute("stroke-width","2");
+    path.setAttribute("stroke-linecap","round");
+    path.setAttribute("opacity","0.85");
+    if(l.type==="repl"||l.type==="wan") path.setAttribute("stroke-dasharray","6 5");
+    svg.appendChild(path);
+  }
+}
+
+document.getElementById("btn-reload").addEventListener("click", loadModel);
+document.getElementById("btn-wires").addEventListener("click", e=>{
+  drawWires = !drawWires; e.currentTarget.classList.toggle("on", drawWires); drawLines();
+});
+document.getElementById("btn-clear").addEventListener("click", ()=>{ selected = null; selectedNode = null; applySelection(); });
+window.addEventListener("resize", drawLines);
+window.addEventListener("scroll", drawLines, {passive:true});
+
+loadModel();
+</script>
+</body>
+</html>

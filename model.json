@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "title": "System Landscape",
+    "subtitle": "Example"
+  },
+  "edge": [
+    {
+      "id": "z-edge",
+      "name": "Edge",
+      "type": "edge",
+      "items": [
+        { "id": "edge-1", "name": "Edge Service", "kind": "edge" }
+      ]
+    }
+  ],
+  "shared": [
+    {
+      "id": "z-shared",
+      "name": "Shared",
+      "type": "shared",
+      "items": [
+        { "id": "shared-1", "name": "Shared Service", "kind": "service" }
+      ]
+    }
+  ],
+  "sites": [
+    {
+      "id": "a",
+      "name": "Site A",
+      "zones": [
+        {
+          "id": "a-front",
+          "name": "Frontend",
+          "type": "dmz",
+          "items": [
+            { "id": "a-front-1", "name": "Frontend Service", "kind": "service", "nodes": ["node-1", "node-2"] }
+          ]
+        },
+        {
+          "id": "a-back",
+          "name": "Backend",
+          "type": "backend",
+          "items": [
+            { "id": "a-back-1", "name": "Backend Service", "kind": "service", "nodes": ["node-1", "node-2"] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "b",
+      "name": "Site B",
+      "zones": [
+        {
+          "id": "b-front",
+          "name": "Frontend",
+          "type": "dmz",
+          "items": [
+            { "id": "b-front-1", "name": "Frontend Service", "kind": "service", "nodes": ["node-1", "node-2"] }
+          ]
+        },
+        {
+          "id": "b-back",
+          "name": "Backend",
+          "type": "backend",
+          "items": [
+            { "id": "b-back-1", "name": "Backend Service", "kind": "service", "nodes":
+            [{
+              "name": "node1",
+              "role": "role",
+              "ip": "0.0.0.0",
+              "mgmt": "0.0.0.0"
+            }, {
+              "name": "node2",
+              "role": "role",
+              "ip": "0.0.0.0",
+              "mgmt": "0.0.0.0"
+            }]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "links": [
+    { "from": "edge-1", "to": "a-front-1", "type": "wan" },
+    { "from": "edge-1", "to": "b-front-1", "type": "wan" },
+    { "from": "a-front-1", "to": "a-back-1", "type": "app" },
+    { "from": "b-front-1", "to": "b-back-1", "type": "app" },
+    { "from": "shared-1", "to": "a-back-1", "type": "app" },
+    { "from": "shared-1", "to": "b-back-1", "type": "app" },
+    { "from": "a-back-1", "to": "b-back-1", "type": "repl" }
+  ]
+}
